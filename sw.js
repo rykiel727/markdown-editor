@@ -12,7 +12,7 @@ self.addEventListener('activate', (event) => {
   console.log('ServiceWorker activate:', event)
 });
 
-/Network falling back to cache の実装関数
+//Network falling back to cache の実装関数
 const networkFallingBackToCache = async (request) => {
 	//定義した名前で、キャッシュを開く
 	const cache = await caches.open(CacheName);
