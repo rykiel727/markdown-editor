@@ -1,14 +1,17 @@
 import * as React from 'react'
 import styled from 'styled-components'
 import { useStateWithStorage } from '../hooks/use_state_with_storage'
-import * as ReactMarkdown from 'react-markdown'
 import { putMemo } from '../indexeddb/memos'
 import { Button } from '../components/button'
 import { SaveModal } from '../components/save_modal'
 import { Link } from 'react-router-dom'
 import { Header } from '../components/header'
+import ConvertMarkdownWorker from 'worker-loader!../worker/convert_markdown_worker'
 
-const { useState } = React
+//Worker のインスタンスを生成
+const convertMarkdownWorker = new ConvertMarkdownWorker()
+
+const { useState, useEffect } = React
 
 interface Props {
 	text: string
@@ -21,6 +24,22 @@ export const Editor: React.FC<Props> = (props) => {
 	//管理する値は boolean 値で、true で表示し false で非表示
 	//初期状態ではモーダルを出さないので、デフォルト値は false
 	const [showModal, setShowModal] = useState(false);
+
+	//HTML の文字列を管理する状態を用意
+	const [html, setHtml] = useState('');
+
+	//初回のみ Worker から結果を受け取る関数を登録
+	useEffect(() => {
+		//Web Worker から受け取った処理結果（HTML）で状態を更新
+		convertMarkdownWorker.onmessage = (event) => {
+			setHtml(event.data.html)
+		}
+	}, [])
+
+	//テキストの変更時に Worker へテキストデータを送信
+	useEffect(() => {
+		convertMarkdownWorker.postMessage(text)
+	}, [text])
 
   return (
     <>
@@ -40,7 +59,7 @@ export const Editor: React.FC<Props> = (props) => {
 					value={text}
 				/>
         <Preview>
-					<ReactMarkdown>{text}</ReactMarkdown>
+					<div dangerouslySetInnerHTML={{ __html: html }} />
 				</Preview>
       </Wrapper>
 			{showModal && (
