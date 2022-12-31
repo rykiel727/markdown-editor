@@ -7,6 +7,7 @@ import {
 import styled from 'styled-components'
 import { Header } from '../components/header'
 import {
+	getMemoPageCount,
 	getMemos,
 	MemoRecord,
 } from '../indexeddb/memos'
@@ -20,13 +21,35 @@ interface Props {
 export const History: React.FC<Props> = (props) => {
 	const { setText } = props
 	const [memos, setMemos] = useState<MemoRecord[]>([])
+
+	//ページングに関する状態を保持するための定義
+	const [page, setPage] = useState(1)
+	const [maxPage, setMaxPage] = useState(1)
+
 	const history = useHistory()
 
 	//レンダリングの後に実行
 	useEffect(() => {
 		//getMemos 関数を実行し、非同期処理が終わったら取得したテキスト履歴を setMemos に渡して更新
-		getMemos().then(setMemos)
+		getMemos(1).then(setMemos)
+		getMemoPageCount().then(setMaxPage)
 	}, [])
+
+	//次ページまたは前ページに遷移できるかどうかを表すフラグ
+	const canNextPage: boolean = page < maxPage
+	const canPrevPage: boolean = page > 1
+
+	//ページ遷移のボタンをクリックした場合に実行される関数を定義
+	const movePage = (targetPage: number) => {
+		//遷移先のページが遷移可能であるかを判定
+		if (targetPage < 1 || maxPage < targetPage) {
+			return
+		}
+
+		//遷移可能な場合は管理されている状態（page）を更新
+		setPage(targetPage)
+		getMemos(targetPage).then(setMemos)
+	}
 
   return (
     <>
@@ -51,6 +74,21 @@ export const History: React.FC<Props> = (props) => {
 				</Memo>
 			))}
 			</Wrapper>
+			<Paging>
+				<PagingButton
+					onClick={() => movePage(page - 1)}
+					disabled={!canPrevPage}
+				>
+					＜
+				</PagingButton>
+				{page} / {maxPage}
+				<PagingButton
+					onClick={() => movePage(page + 1)}
+					disabled={!canNextPage}
+				>
+					＞
+				</PagingButton>
+			</Paging>
     </>
   )
 }
@@ -64,12 +102,13 @@ const HeaderArea = styled.div`
 `
 
 const Wrapper = styled.div`
-	bottom: 0;
+	bottom: 3rem;
 	left: 0;
 	position: fixed;
 	right: 0;
 	top: 3rem;
 	padding: 0 1rem;
+	overflow-y: scroll;
 `
 const Memo = styled.button`
 	display: block;
@@ -89,4 +128,25 @@ const MemoText = styled.div`
 	overflow: hidden;
 	text-overflow: ellipsis;
 	white-space: nowrap;
+`
+const Paging = styled.div`
+	bottom: 0;
+	height: 3rem;
+	left: 0;
+	line-height: 2rem;
+	padding: 0.5rem;
+	position: fixed;
+	right: 0;
+	text-align: center;
+`
+const PagingButton = styled.button`
+	background: none;
+	border: none;
+	display: inline-block;
+	height: 2rem;
+	padding: 0.5rem 1rem;
+
+	&:disabled {
+		color: silver;
+	}
 `
