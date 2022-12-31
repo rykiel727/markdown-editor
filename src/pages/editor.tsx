@@ -10,10 +10,13 @@ import { Header } from '../components/header'
 
 const { useState } = React
 
-const StorageKey = 'pages/editor:text';
+interface Props {
+	text: string
+	setText: (text: string) => void
+}
 
-export const Editor: React.FC = () => {
-	const [text, setText] = useStateWithStorage('', StorageKey);
+export const Editor: React.FC<Props> = (props) => {
+	const { text, setText } = props
 
 	//管理する値は boolean 値で、true で表示し false で非表示
 	//初期状態ではモーダルを出さないので、デフォルト値は false
